@@ -1,7 +1,15 @@
-local apiUrl = ""
-local apiHeaders = {}
+--Localizations
+local isstring		= isstring
+local isnumber		= isnumber
+local istable		= istable
+local isfunction	= isfunction
+local ErrorNoHalt	= ErrorNoHalt
+local HTTP 		= HTTP
 
-local methods = {}
+local apiUrl		= ""
+local apiHeaders	= {}
+
+local methods		= {}
 
 
 --[[
