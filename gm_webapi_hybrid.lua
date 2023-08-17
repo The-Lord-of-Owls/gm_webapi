@@ -1,0 +1,1 @@
+--When the socket version is created, we will work on a hybrid version that prioritizes use of sockets, but if not available will fallback to HTTP
