@@ -58,6 +58,7 @@ local function Add( id, route, cback, onError, cacheTTL, customHeaders )
 	if cacheTTL and isnumber( cacheTTL ) then
 		method.cacheTTL = cacheTTL
 		method.nextCache = 0
+		method.waitReq = false
 	elseif cacheTTL then
 		ErrorNoHalt( "API WARNING: cacheTTL for API methods must be a number value, the API method has been created with caching disabled!\n" )
 	end
@@ -102,22 +103,24 @@ local function Call( id, params )
 	local curTime = CurTime()
 
 	--Check if should return cached value
-	if apiMethod.nextCache and apiMethod.nextCache >= curTime and apiMethod.cacheRes ~= "" then
+	if apiMethod.waitReq or ( apiMethod.nextCache and apiMethod.nextCache >= curTime and apiMethod.cacheRes ~= "" ) then
 		apiMethod.cback( apiMethod.cacheRes )
 
 		return
 	end
 
+	apiMethod.waitReq = true
 	httpPost( apiUrl .. apiMethod.route, params or {}, function( res, size, headers, code )
 		local parsed = utilJSONToTable( res )
 
 		--Update the cache
 		if apiMethod.cacheTTL and curTime > apiMethod.nextCache then
 			apiMethod.nextCache = curTime + apiMethod.cacheTTL
-			apiMethod.cacheRes = parsed
+			apiMethod.cacheRes = parsed.resData
+			apiMethod.waitReq = false
 		end
 
-		apiMethod.cback( parsed )
+		apiMethod.cback( parsed.resData )
 	end, apiMethod.onError or ErrorNoHalt, apiMethod.headers or apiHeaders )
 end
 
@@ -202,5 +205,15 @@ api = setmetatable( {
 		Call( ... )
 	end
 } )
+
+--[[Was used during testing]]
+SetUrl( "http://localhost:5000/api" )
+Add( "test", "/test", function( res )
+	PrintTable(res)
+end, nil, 10 )
+
+timer.Create( "testing-api", 1, 0, function()
+	Call( "test", { steamId = "00000000000000001" } )
+end )
 
 
